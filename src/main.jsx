@@ -41,6 +41,7 @@ function App() {
   const [loginRole, setLoginRole] = useState('student');
   const [page, setPage] = useState('dashboard');
   const [mobileNav, setMobileNav] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [assessmentType, setAssessmentType] = useState('awal');
   const [studentName, setStudentName] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -136,6 +137,15 @@ function App() {
   function notify(message) {
     setNotice(message);
     setTimeout(() => setNotice(''), 2600);
+  }
+  async function logout() {
+    if (loginRole !== 'student' && supabase) await supabase.auth.signOut();
+    setShowProfileMenu(false);
+    setLoggedIn(false);
+    setStaffUser(null);
+    setStarted(false);
+    setSubmitted(false);
+    setAnswers({});
   }
   function openAssessment(type) {
     setAssessmentType(type); setStarted(false); setSubmitted(false); setAnswers({}); setQIndex(0); setPage('assessment');
@@ -300,7 +310,6 @@ function App() {
       </div>)}
       <div className="sidebar-bottom">
         <div className="help-card"><div className="help-icon"><Sparkles size={17}/></div><strong>Semangat belajar!</strong><p>Setiap langkah kecil membawamu lebih dekat ke tujuan.</p><button onClick={() => notify('Tetap fokus dan kerjakan dengan jujur!')}>Pesan motivasi <ArrowUpRight size={14}/></button></div>
-        <div className="profile"><div className="avatar">OP</div><div className="profile-info"><strong>{loginRole === 'student' ? studentName : (staffUser?.full_name || 'Pengguna Sekolah')}</strong><small>{loginRole === 'student' ? studentClass : loginRole === 'admin' ? 'Administrator' : 'Guru'}</small></div><button title="Keluar" onClick={async () => { if (loginRole !== 'student' && supabase) await supabase.auth.signOut(); setLoggedIn(false); setStaffUser(null); setStarted(false); setSubmitted(false); setAnswers({}); }}><LogOut size={17}/></button></div>
       </div>
     </aside>
     {mobileNav && <div className="scrim" onClick={() => setMobileNav(false)}></div>}
@@ -308,7 +317,22 @@ function App() {
       <header className="topbar">
         <button className="menu-toggle" onClick={() => setMobileNav(true)}><Menu size={20}/></button>
         <div className="breadcrumb">Portal Sekolah <ChevronRight size={14}/> <b>{navItems.find(n => n.id === page)?.label || 'Asesmen'}</b></div>
-        <div className="top-actions"><div className="semester-pill"><CalendarDays size={15}/> Tahun Ajaran 2026/2027</div><button className="icon-button" onClick={() => notify('Tidak ada notifikasi baru.')}><Bell size={18}/><i></i></button><div className="top-avatar">OP</div></div>
+        <div className="top-actions">
+          <div className="semester-pill"><CalendarDays size={15}/> Tahun Ajaran 2026/2027</div>
+          <button className="icon-button" onClick={() => notify('Tidak ada notifikasi baru.')}><Bell size={18}/><i></i></button>
+          <div className="profile-menu-wrap">
+            <button className="top-avatar profile-menu-trigger" title="Menu pengguna" aria-expanded={showProfileMenu} onClick={() => setShowProfileMenu(open => !open)}>
+              {loginRole === 'student' ? (studentName || 'S').slice(0, 1).toUpperCase() : (staffUser?.full_name || 'A').slice(0, 1).toUpperCase()}
+            </button>
+            {showProfileMenu && <div className="profile-menu">
+              <div className="profile-menu-user">
+                <strong>{loginRole === 'student' ? studentName : (staffUser?.full_name || 'Pengguna Sekolah')}</strong>
+                <small>{loginRole === 'student' ? studentClass : loginRole === 'admin' ? 'Administrator' : 'Guru'}</small>
+              </div>
+              <button className="profile-menu-logout" onClick={logout}><LogOut size={17}/> Keluar</button>
+            </div>}
+          </div>
+        </div>
       </header>
       <div className="content">
         {page === 'student-assessments' && <StudentAssessmentCenter assessments={assessments} studentName={studentName} selectedAssessment={selectedAssessment} setSelectedAssessment={setSelectedAssessment} started={started} setStarted={setStarted} submitted={submitted} setSubmitted={setSubmitted} answers={answers} setAnswers={setAnswers} qIndex={qIndex} setQIndex={setQIndex} remainingSeconds={remainingSeconds} setRemainingSeconds={setRemainingSeconds} notify={notify}/>}
